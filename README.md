@@ -8,3 +8,13 @@ for differencing and converting time series data into supervised learning data f
 models.
 
 `minmax_scaling.py` is a simple scaling model based on the minimum and maximum in each time period.
+
+## List of models
+
+1. Baseline (persistence with seasonality)
+1. Min max scaling model
+1. Prophet model
+1. Seasonal ARIMA
+1. Holt-Winters
+1. LSTM
+1. Windowed MLP
