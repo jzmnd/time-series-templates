@@ -18,3 +18,4 @@ models.
 1. Holt-Winters
 1. LSTM
 1. Windowed MLP
+1. Gradient boosted trees
