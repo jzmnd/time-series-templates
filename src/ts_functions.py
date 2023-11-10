@@ -19,9 +19,10 @@ def smape(y_pred, y_actual):
 
 
 class SeriesToSupervisedTransformer(BaseEstimator, TransformerMixin):
-    """Scikit-learn Transformer for reframing time series data as a supervised learning dataset.
+    """Scikit-learn Transformer for re-framing time series data as a supervised learning dataset.
     For more info on the inspiration for this transformer see:
-    https://machinelearningmastery.com/convert-time-series-supervised-learning-problem-python/"""
+    https://machinelearningmastery.com/convert-time-series-supervised-learning-problem-python/
+    """
 
     def __init__(self, n_in=1, n_out=1, dropna=True):
         """Initialize transformer.

@@ -5,7 +5,7 @@ from sklearn.preprocessing import MinMaxScaler
 from src.ts_functions import SeriesToSupervisedTransformer, DifferenceTransformer
 
 
-class TSData():
+class TSData:
     """Time series data class for conveniently loading data, applying transformations and
     splitting into training and test sets"""
 
@@ -25,19 +25,25 @@ class TSData():
         self.differencer = None
         self.sersup = None
 
-        # first column is time second column is y
-        self.dt_col, self.y_col = self.data.columns
+        # Parameters for supervised learning problem
+        self.look_back = look_back
+        self.look_fwd = look_fwd
 
+        self._standardized_data()
+
+    def _standardized_data(self):
+        """Expect first column to be time and second column to be y data and convert the time
+        column to a datetime object."""
+        self.dt_col, self.y_col = self.data.columns
         self.data[self.dt_col] = pd.to_datetime(self.data[self.dt_col])
 
     def reset_data(self):
-        """Reset data to the original raw data.
-        """
+        """Reset data to the original raw data."""
         self.data = self._raw_data.copy()
-        self.dt_col, self.y_col = self.data.columns
+        self._standardized_data()
 
     @classmethod
-    def from_file(cls, filename, test_split=12, look_back=1, look_fwd=12):
+    def from_file(cls, filename, test_split=12, look_back=0, look_fwd=12):
         """Load data from a csv file.
 
         Args:
@@ -63,8 +69,7 @@ class TSData():
         return self.data[self.y_col].values.reshape(-1, 1)
 
     def min_max_scale(self):
-        """Perform min-max scaling on the data.
-        """
+        """Perform min-max scaling on the data."""
         self.scaler = MinMaxScaler(feature_range=(0, 1))
         self.data[self.y_col] = self.scaler.fit_transform(self._y_data_arr)
 
@@ -80,8 +85,7 @@ class TSData():
         return self.scaler.inverse_transform(y)
 
     def difference(self):
-        """Perform 1st order differencing on the data.
-        """
+        """Perform 1st order differencing on the data."""
         self.differencer = DifferenceTransformer()
         self.data[self.y_col] = self.differencer.fit_transform(self._y_data_arr)
 
@@ -96,21 +100,19 @@ class TSData():
         """
         return self.differencer.inverse_transform(y, y0)
 
-    def series_to_supervised(self, n_in, n_out):
+    def series_to_supervised(self):
         """Convert series data to supervised learning problem by adding lagged observations as
         input and future observations as targets.
-
-        Args:
-            n_in (int): Number of lag observations as input
-            n_out (int): Number of future observations as output
         """
-        self.sersup = SeriesToSupervisedTransformer(n_in=n_in, n_out=n_out)
+        self.sersup = SeriesToSupervisedTransformer(n_in=self.look_back, n_out=self.look_fwd)
 
         y_trans = self.sersup.fit_transform(self._y_data_arr)
 
         # create correct index and column names for the transformed data
-        index = range(n_in + 1, self.data.shape[0] - n_out + 1)
-        columns = ["{:s}(t{:+d})".format(self.y_col, i) for i in range(-n_in, n_out)]
+        index = range(self.look_back + 1, self.data.shape[0] - self.look_fwd + 1)
+        columns = [
+            "{:s}(t{:+d})".format(self.y_col, i) for i in range(-self.look_back, self.look_fwd)
+        ]
 
         y_trans = pd.DataFrame(y_trans, index=index, columns=columns)
 
@@ -143,4 +145,40 @@ class TSData():
         Returns:
             DataFrame
         """
-        return self.data.iloc[:-self.test_split].copy()
+        return self.data.iloc[: -self.test_split].copy()
+
+    @property
+    def test_X(self):
+        """The training features data.
+
+        Returns:
+            DataFrame
+        """
+        return self.data.filter(like=self.y_col).iloc[-self.test_split:, :self.look_back].copy()
+
+    @property
+    def test_y(self):
+        """The training labels data.
+
+        Returns:
+            DataFrame
+        """
+        return self.data.filter(like=self.y_col).iloc[-self.test_split:, self.look_back:].copy()
+
+    @property
+    def train_X(self):
+        """The test features data.
+
+        Returns:
+            DataFrame
+        """
+        return self.data.filter(like=self.y_col).iloc[:-self.test_split, :self.look_back].copy()
+
+    @property
+    def train_y(self):
+        """The test labels data.
+
+        Returns:
+            DataFrame
+        """
+        return self.data.filter(like=self.y_col).iloc[:-self.test_split, self.look_back:].copy()

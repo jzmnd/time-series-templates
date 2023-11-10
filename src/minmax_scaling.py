@@ -4,7 +4,7 @@ from statsmodels.regression.linear_model import OLS
 from statsmodels.tools.tools import add_constant
 
 
-class MinMaxScaling():
+class MinMaxScaling:
     """A min-max scaling model for time series data.
 
     The model is suitable for seasonal data in which there is a clear maximum and minimum during
